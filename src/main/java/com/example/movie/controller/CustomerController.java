@@ -117,6 +117,18 @@ public class CustomerController {
 					e.printStackTrace();
 			}
 			result.put(200, customer);
+			String emailBody = "Registration done";
+			String emailSubject = "Registration done";
+			try {
+				emailSender.sendEmail(customer.getEmail(), emailBody, emailSubject);
+
+			} catch (MessagingException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+				result.put(502, customer);
+				return result;
+
+			}
 			return result; 
 		}
 		result.put(400, customer);
@@ -216,6 +228,37 @@ public class CustomerController {
 		return result; 
 
 	}
+
+	@PostMapping("/forgetPasswordMail")
+	public Map<Integer, String> forgetPasswordMail(@RequestBody Map<String, String> requestBody) {
+
+		Map<Integer, String> result = new HashMap<Integer, String>();
+
+		//Send the verification code email
+		String email = requestBody.get("email");
+		Customer customer = null;
+		if(checkCustomerExists(email)) {
+			String emailBody = "Please click on the following link to reset your password: http://localhost:3000/forgotPasswordMail";
+			String emailSubject = "Forgot Password";
+			try {
+				emailSender.sendEmail(email, emailBody, emailSubject);
+
+			} catch (MessagingException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+				result.put(502, "Error in sending mail");
+				return result;
+
+			}
+
+			result.put(200, "Mail sent Successfully");
+			return result;
+
+		}
+		result.put(204, "No email found");
+		return result;
+
+	}
 	
 	@PostMapping("/changePassword")
 	public ResponseEntity<Customer> changePassword(@RequestBody Map<String, String> requestBody) {
@@ -261,7 +304,43 @@ public class CustomerController {
 		 List<Customer> list =  customerDao.findAll();
 		 return list;
 	}
-	 
+
+	@PostMapping("/getcustomerx")
+	public Map<Integer, CustomerBody> getCustomer(@RequestBody Map<String, String> requestBody) {
+		Map<Integer, CustomerBody> resultMap = new HashMap<Integer, CustomerBody>();
+		String email = requestBody.get("email");
+		List<Customer> customerList = customerDao.findByEmail(email);
+		if (!checkCustomerExists(email)) {
+			resultMap.put(204, new CustomerBody());
+			return resultMap;
+		}
+
+
+		//Decrypt the password in response
+		Customer customerResponse = customerList.get(0);
+		try {
+			customerResponse.setPassword(textEncryptor.decrypt(customerResponse.getPassword()));
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+
+		CustomerBody result = new CustomerBody();
+		result.setCustomer(customerResponse);
+
+		// Fetch the cards and attach to the response
+		List<PaymentCards> cards = cardsDao.findByUserID(customerResponse.getUserID());
+
+		for(PaymentCards card: cards) {
+			decryptCard(card);
+		}
+
+		result.setCardDetails(cards);
+		resultMap.put(200, result);
+
+		return resultMap;
+
+	}
 	
 	 public boolean checkCustomerExists (String email ) {
 		 

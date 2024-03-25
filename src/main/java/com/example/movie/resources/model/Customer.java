@@ -129,8 +129,8 @@ public class Customer {
 	}
 
 	public void setPromotionsSubscribed(boolean promotionsSubscribed) {
-//		this.promotionsSubscribed = promotionsSubscribed;
-		this.promotionsSubscribed = true;
+		this.promotionsSubscribed = promotionsSubscribed;
+//		this.promotionsSubscribed = true;
 	}
 
 
